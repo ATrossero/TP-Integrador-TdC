@@ -22,10 +22,10 @@ El script requiere las bibliotecas `numpy` (para operaciones numéricas) y `matp
 
 Abre el terminal en el directorio del proyecto y ejecuta el siguiente comando para instalarlas:
 
-```bash
-
+```
+bash
 pip install numpy matplotlib
-
+```
 ## Puesta en Marcha (Ejecución de la Simulación)
 
 La consigna requiere que este archivo contenga las indicaciones necesarias para la ejecución. Sigue estos pasos para iniciar la simulación:
