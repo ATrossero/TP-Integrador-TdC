@@ -16,6 +16,20 @@ Para la correcta ejecución del script en tu entorno, es indispensable contar co
 | **Intérprete Python** | **Descargar e instalar Python 3.12 o superior.** |
 | **IDE** | **Visual Studio Code (VS Code)** es el entorno recomendado para la ejecución. |
 
+
+
+## Clonar el repositorio
+
+Abrir una consola (Git Bash, CMD o PowerShell**) y ejecutar:
+
+```
+git clone https://github.com/ATrossero/TP-Integrador-TdC.git
+```
+Ingresar al directorio del proyecto:
+```
+cd TP-Integrador-TdC
+```
+
 ### 2. Instalación de Dependencias
 
 El script requiere las bibliotecas `numpy` (para operaciones numéricas) y `matplotlib` (para la visualización en tiempo real).
@@ -26,6 +40,7 @@ Abre el terminal en el directorio del proyecto y ejecuta el siguiente comando pa
 bash
 pip install numpy matplotlib
 ```
+
 ## Puesta en Marcha (Ejecución de la Simulación)
 
 La consigna requiere que este archivo contenga las indicaciones necesarias para la ejecución. Sigue estos pasos para iniciar la simulación:
