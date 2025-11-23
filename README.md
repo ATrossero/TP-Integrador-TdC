@@ -18,7 +18,7 @@ Para la correcta ejecución del script en tu entorno, es indispensable contar co
 
 
 
-## Clonar el repositorio
+### 2. Clonar el repositorio
 
 Abrir una consola (Git Bash, CMD o PowerShell**) y ejecutar:
 
@@ -30,7 +30,7 @@ Ingresar al directorio del proyecto:
 cd TP-Integrador-TdC
 ```
 
-### 2. Instalación de Dependencias
+## Instalación de Dependencias
 
 El script requiere las bibliotecas `numpy` (para operaciones numéricas) y `matplotlib` (para la visualización en tiempo real).
 
@@ -41,7 +41,7 @@ bash
 pip install numpy matplotlib
 ```
 
-## Puesta en Marcha (Ejecución de la Simulación)
+### 3. Puesta en Marcha (Ejecución de la Simulación)
 
 La consigna requiere que este archivo contenga las indicaciones necesarias para la ejecución. Sigue estos pasos para iniciar la simulación:
 
