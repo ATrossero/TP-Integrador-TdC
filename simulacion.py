@@ -39,15 +39,15 @@ class SistemaControlMotor:
         # self.error_volts ahora es la ENTRADA al controlador
         self.error_volts = 0  
         self.senal_control_interna = 0 # Valor de control sin conversión a 0-5V
-        self.senal_control_volts = 0 # Nuevo: Señal de control en 0-5V
+        self.senal_control_volts = 0 # Señal de control en 0-5V
         self.perturbacion = 0
         self.retroalimentacion = 0
         self.tiempo_transcurrido = 0
         
-        # Parámetros del controlador - PROPORCIONAL DOMINANTE
-        self.Kp = 4.0    # Proporcional alto para respuesta rápida
-        self.Ki = 0.2   # Integral mínima
-        self.Kd = 0.8    # Derivativo para suavizar
+        # Parámetros del controlador 
+        self.Kp = 4.0    
+        self.Ki = 0.2   
+        self.Kd = 0.8    
         self.integral = 0
         
         # El error anterior debe ser en km/h para el término derivativo
@@ -98,6 +98,8 @@ class SistemaControlMotor:
             self.historial_rpm_reales.append(self.rpm_reales)
             self.historial_en_rango.append(self.esta_en_rango_objetivo())
     
+
+    # "Transdurctores"
     def velocidad_a_voltaje(self, velocidad):
         """Convierte velocidad (km/h) a voltaje VSS (0-5V)"""
         if self.vss_vel_max == self.vss_vel_min:
@@ -129,9 +131,6 @@ class SistemaControlMotor:
         Negativo (disminuir) -> < 2.5V
         Positivo (aumentar) -> > 2.5V
         
-        Asumimos que el rango operativo interno de la señal de control es de aproximadamente [-25, 25]
-        como se limita al final de calcular_control_proporcional_inteligente.
-        
         Escalaremos la señal_control_interna a un rango de -2.5V a +2.5V
         para luego sumarle 2.5V.
         """
@@ -153,7 +152,7 @@ class SistemaControlMotor:
         return (self.velocidad_nominal + self.rango_offset_min, 
                 self.velocidad_nominal + self.rango_offset_max)
     
-    # MODIFICACIÓN: Ahora recibe error_volts como entrada
+    
     def calcular_control_proporcional_inteligente(self, error_volts): 
         """Calcula control con PID que usa el error en km/h (convertido de error_volts)"""
         
@@ -190,12 +189,12 @@ class SistemaControlMotor:
         
         P = Kp_efectivo * error_efectivo
         
-        # 3. INTEGRAL MUY LIMITADA - solo para corrección fina
+        # 3. INTEGRAL  - solo para corrección fina
         if self.esta_en_rango_objetivo() and abs(error_kmh) < 1.0:
-            self.integral += error_kmh * self.dt * 0.02  # Muy lenta
-            self.integral = np.clip(self.integral, -2, 2)  # Muy limitada
+            self.integral += error_kmh * self.dt * 0.02  
+            self.integral = np.clip(self.integral, -2, 2)  
         else:
-            self.integral *= 0.9  # Decaimiento rápido
+            self.integral *= 0.9  
         
         I = self.Ki * self.integral
         
@@ -206,7 +205,8 @@ class SistemaControlMotor:
         
         control = P + I + D
         
-        # 5. ACCIÓN CORRECTIVA INSTANTÁNEA si se detecta sobrepaso inminente
+
+        
         accion_correctiva = 0
         velocidad_proyectada = self.velocidad_actual + self.tendencia * self.dt
         
@@ -214,16 +214,16 @@ class SistemaControlMotor:
             # Se proyecta sobrepaso superior - acción correctiva fuerte
             exceso = velocidad_proyectada - (rango_max + 0.2)
             accion_correctiva = -exceso * 10.0
-            # print(f"🚨 Prevención sobrepaso superior: {velocidad_proyectada:.1f} km/h")
-        
+            
         elif velocidad_proyectada < rango_min - 0.3:
             # Se proyecta sobrepaso inferior - acción correctiva moderada
             deficit = (rango_min - 0.2) - velocidad_proyectada
             accion_correctiva = deficit * 6.0
-            # print(f"⚠️ Prevención sobrepaso inferior: {velocidad_proyectada:.1f} km/h")
+            
         
         control += accion_correctiva
         
+
         # 6. LIMITACIÓN INTELIGENTE de la señal de control
         if self.velocidad_actual > rango_max + 0.2:
             # Muy cerca del límite superior - limitar acciones positivas
@@ -241,14 +241,11 @@ class SistemaControlMotor:
         return control, P, I, D, accion_correctiva
     
     def aplicar_perturbacion_atenuada(self, perturbacion):
-        """Aplica la perturbación con atenuación para que afecte menos a la salida"""
         # Limitar perturbación a rango -100 a +200 RPM
         perturbacion_limited = np.clip(perturbacion, -100, 200)
+        perturbacion_real = perturbacion_limited * self.factor_atenuacion_perturbacion
         
-        # Aplicar factor de atenuación (la perturbación afecta menos)
-        perturbacion_atenuada = perturbacion_limited * self.factor_atenuacion_perturbacion
-        
-        return perturbacion_atenuada
+        return perturbacion_real
     
     def esta_en_rango_objetivo(self):
         """Verifica si la velocidad está en el rango objetivo (nominal-2, nominal+1) km/h"""
@@ -267,7 +264,7 @@ class SistemaControlMotor:
         # 1. Calcular error de ENTRADA en Volts (para el controlador)
         voltaje_nominal = self.velocidad_a_voltaje(self.velocidad_nominal)
         voltaje_actual = self.velocidad_a_voltaje(self.velocidad_actual)
-        self.error_volts = voltaje_nominal - voltaje_actual # NUEVO ERROR EN VOLTS
+        self.error_volts = voltaje_nominal - voltaje_actual 
         
         # 2. Calcular señal de control. Usa error_volts, pero convierte a km/h internamente.
         self.senal_control_interna, P, I, D, accion_correctiva = \
@@ -286,22 +283,10 @@ class SistemaControlMotor:
         
         ganancia_base = 18
         
-        # Aumentar ganancia si está fuera del rango para respuesta más rápida
+       
         if not self.esta_en_rango_objetivo():
-            ganancia_base *= 1.3  # 30% más rápido fuera del rango
-            
-        # El cambio de RPM ahora es proporcional al delta_voltaje_ctrl
-        # Escala: 2.5V representa el límite de MAX_CTRL_INTERNA (25.0)
-        # Cambio de RPM = (delta_voltaje_ctrl * (MAX_CTRL_INTERNA / 2.5V)) * ganancia_base
-        # Como MAX_CTRL_INTERNA/2.5 = 10, es: delta_voltaje_ctrl * 10 * ganancia_base
+            ganancia_base *= 1.3  
         
-        # Usamos self.senal_control_interna, que ya contiene el valor de control 
-        # sin escalar a 0-5V, ya que es más directo. 
-        # NOTA: EL CONTROL SE BASA EN LA SEÑAL INTERNA.
-        # Si se desea que se base en la señal de voltaje final, se haría:
-        # rpm_cambio = (delta_voltaje_ctrl * (25.0 / 2.5)) * ganancia_base
-        
-        # Mantenemos la lógica de la señal de control interna para la dinámica, ya que es más natural.
         rpm_cambio = self.senal_control_interna * ganancia_base
         
         self.rpm_ctrl += rpm_cambio * self.dt
@@ -309,11 +294,11 @@ class SistemaControlMotor:
         # Limitar RPM_ctrl
         self.rpm_ctrl = np.clip(self.rpm_ctrl, 4700, 6300)
         
-        # APLICAR PERTURBACIÓN ATENUADA
-        perturbacion_atenuada = self.aplicar_perturbacion_atenuada(perturbacion)
+        # APLICAR PERTURBACIÓN
+        perturbacion_real = self.aplicar_perturbacion_atenuada(perturbacion)
         
-        # RPM REALES son RPM_ctrl + PERTURBACIÓN ATENUADA
-        self.rpm_reales = self.rpm_ctrl + perturbacion_atenuada
+        # RPM REALES son RPM_ctrl + PERTURBACIÓN
+        self.rpm_reales = self.rpm_ctrl + perturbacion_real
         
         # Limitar RPM reales
         self.rpm_reales = np.clip(self.rpm_reales, 4700, 6300)
@@ -350,12 +335,12 @@ class SistemaControlMotor:
         
         # Log de valores
         if len(self.historial_tiempo) % 5 == 0:
-            self.log_valores(accion_correctiva, perturbacion_atenuada)
+            self.log_valores(accion_correctiva, perturbacion_real)
     
-    def log_valores(self, accion_correctiva, perturbacion_atenuada):
+    def log_valores(self, accion_correctiva, perturbacion_real):
         """Muestra los valores actuales en consola"""
-        en_rango = "✓" if self.esta_en_rango_objetivo() else "✗"
-        correccion = "🛡️" if abs(accion_correctiva) > 2.0 else "  "
+        en_rango = "[OK]" if self.esta_en_rango_objetivo() else "[NO]"
+        correccion = "[CORR]" if abs(accion_correctiva) > 2.0 else "     "
         rango_min, rango_max = self.get_rango_objetivo()
         
         # Mostrar tanto la perturbación original como la atenuada
@@ -408,11 +393,11 @@ def animar(i, sistema, slider_perturbacion, slider_velocidad, lines, axs, text_t
         
         # Indicador de estado
         if sistema.esta_en_rango_objetivo():
-            estado_texto = f"EN RANGO {rango_min:.0f}-{rango_max:.0f} km/h ✅"
+            estado_texto = f"EN RANGO {rango_min:.0f}-{rango_max:.0f} km/h [OK]"
             color_fondo = 'lightgreen'
             color_borde = 'green'
         else:
-            estado_texto = f"FUERA DE RANGO ⚠️"
+            estado_texto = f"FUERA DE RANGO [ALERTA]"
             color_fondo = 'lightyellow'
             color_borde = 'orange'
             
@@ -543,7 +528,7 @@ def main():
                          bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
     
     # Texto para estado
-    text_estado = ax1.text(0.02, 0.85, 'FUERA DE RANGO ⚠️', transform=ax1.transAxes,
+    text_estado = ax1.text(0.02, 0.85, 'FUERA DE RANGO [ALERTA]', transform=ax1.transAxes,
                            fontsize=10, verticalalignment='top',
                            bbox=dict(boxstyle='round', facecolor='lightyellow', 
                                      edgecolor='orange', alpha=0.8))
@@ -596,16 +581,19 @@ def main():
     # Conectar el slider de velocidad a la función de actualización
     slider_velocidad.on_changed(actualizar_rango_visual)
     
-    print("=== SISTEMA DE CONTROL PIT LANE ASSISTANCE (VSS 0-5V) ===")
+    print("=== SISTEMA DE CONTROL PIT LANE ASSISTANCE ===")
     print("CARACTERÍSTICAS:")
     print("• Error de entrada: V_nominal - V_actual (V)")
     print("• Señal de control: 0V (disminuir máx) a 5V (aumentar máx), 2.5V (neutral)")
     print("• Señal VSS: 0V (50 km/h) a 5V (100 km/h)")
+    print(f"• Velocidad inicial: 70 km/h")
+    
     print("")
     print("CONTROLES:")
     print("• Slider SUPERIOR: Velocidad nominal deseada")
     print("• Slider INFERIOR: Perturbación aplicada")
     print("")
+
     print("=" * 140)
     print("T (s) | θi (km/h) | θ₀ (km/h) | eV (V) | θ₀c (V) | p (RPM) | Rango")
     print("-" * 140)
