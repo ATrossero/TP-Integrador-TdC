@@ -323,8 +323,8 @@ class SistemaControlMotor:
         self.historial_error_kmh.append(self.error_kmh)
         self.historial_error_volts.append(self.error_volts)
         self.historial_control_interna.append(self.senal_control_interna)
-        self.historial_control_volts.append(self.senal_control_volts) # Guardar la nueva señal en Volts
-        self.historial_perturbacion.append(perturbacion)  # Guardamos la perturbación original para mostrar
+        self.historial_control_volts.append(self.senal_control_volts) 
+        self.historial_perturbacion.append(perturbacion)  
         self.historial_retro.append(self.retroalimentacion)
         self.historial_proporcional.append(P)
         self.historial_integral.append(I)
@@ -353,8 +353,8 @@ class SistemaControlMotor:
         print(f"T: {self.historial_tiempo[-1]:5.1f}s | "
               f"θi: {self.velocidad_nominal:4.0f}km/h | "
               f"θ₀: {self.velocidad_actual:5.1f}km/h | "
-              f"eV: {self.error_volts:5.3f}V | " # Error en Volts
-              f"θ₀c: {self.senal_control_volts:5.3f}V | " # Señal de Control en Volts
+              f"eV: {self.error_volts:5.3f}V | " 
+              f"θ₀c: {self.senal_control_volts:5.3f}V | " 
               f"p: {perturbacion_original:4.0f}RPM | "
               f"Rango: [{rango_min:.0f}-{rango_max:.0f}] {en_rango} {correccion}")
 
@@ -373,8 +373,8 @@ def animar(i, sistema, slider_perturbacion, slider_velocidad, lines, axs, text_t
     if len(tiempos) > 1:
         lines[0].set_data(tiempos, sistema.historial_entrada)
         lines[1].set_data(tiempos, sistema.historial_salida)
-        lines[2].set_data(tiempos, sistema.historial_error_volts)  # Error en Volts
-        lines[3].set_data(tiempos, sistema.historial_control_volts) # Señal de Control en Volts
+        lines[2].set_data(tiempos, sistema.historial_error_volts)  
+        lines[3].set_data(tiempos, sistema.historial_control_volts) 
         lines[4].set_data(tiempos, sistema.historial_perturbacion)
         lines[5].set_data(tiempos, sistema.historial_retro)
         lines[6].set_data(tiempos, sistema.historial_proporcional)
